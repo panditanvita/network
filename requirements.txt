@@ -1,0 +1,2 @@
+requests==2.23.0
+searchtweets-v2==1.0.4
