@@ -5,12 +5,10 @@ from typing import Sequence
 import time
 import yaml
 import re
-from searchtweets import collect_results, load_credentials, gen_request_parameters
 
 YAML_KEY="search_tweets_v2"
 DESCRIBINGWORDS = "https://describingwords.io/api/descriptors?term="
-TWITTER_QUERY = "#NetworkedMirrorBot -is:retweet -has:media"
-TEST_QUERY = "madame bovary -is:retweet -has:media lang:en"
+TEST_QUERY = "love in the time of cholera -is:retweet -has:media lang:en"
 
 """ Get a JSON object listing the descriptors for a term
 
@@ -24,15 +22,15 @@ def get_descriptor(term: str, sortType: str = "unique"):
   return r.json()[0]["word"]
 
 # Example query:
-# print(get_pairings(["girl", "boy", "dragon"]))
-def get_pairings(tweet_keywords: Sequence):
+# print(recombine_and_mirror(["girl", "boy", "dragon"]))
+def recombine_and_mirror(tweet_keywords: Sequence) -> str:
   pairings = []
   for keyword in tweet_keywords:
     # No need for more than 5 pairs
     if (len(pairings) >= 5):
        break
     # Otherwise every tweet sees this
-    if re.match("m|Madame|B|bovary", keyword):
+    if re.match("l|Love|the|t|Time|c|Cholera", keyword):
       continue
     time.sleep(.500)  # Otherwise we'll get throttled by the API
     try:
@@ -40,14 +38,12 @@ def get_pairings(tweet_keywords: Sequence):
     except:
       # If get_descriptor fails, ignore this word and try another
       continue
-  return pairings
 
-def pairings_to_tweet(pairings):
   new_post = ""
   for pair in pairings:
     new_post += " ".join(pair)
     new_post += "\n"
-  return new_post
+  return new_post.strip()
 
 
 """
@@ -61,37 +57,30 @@ def setup_twitter():
   auth.set_access_token(secrets[YAML_KEY]["access_token"],
                         secrets[YAML_KEY]["access_token_secret"])
 
-  # Start watching for tweets that mention the bot.
-  search_args = load_credentials(".twitter_keys.yaml", yaml_key=YAML_KEY, env_overwrite=False)
-  query = gen_request_parameters(TEST_QUERY, results_per_call=10)
-
-  return search_args, query, tweepy.API(auth, wait_on_rate_limit=True)
+  return tweepy.API(auth, wait_on_rate_limit=True)
 
 
 #####################################################################
-search_args, query, tweeper = setup_twitter()
+tweeper = setup_twitter()
 
 while True:
-  tweets = collect_results(query, max_tweets=10, result_stream_args=search_args)
-
+  # 2 tweets at most, don't want to overcrowd anyone's feed.
+  tweets = tweeper.search(TEST_QUERY, lang="en", result_type="recent", count=2, include_entities=False)
   for tweet in tweets:
-    # We are at the end of the tweets
-    if "id" not in tweet.keys():
-      break
-
     try:
-      keywords = re.findall("[a-zA-Z]{3,}", tweet["text"])
+      keywords = re.findall("[a-zA-Z]{3,}", tweet._json["text"])
       keywords = set(keywords) # uniques
-      pairings = get_pairings(list(keywords))
+      new_post = recombine_and_mirror(list(keywords))
 
-      if len(pairings) == 0:
+      if len(new_post) == 0:
         continue
 
-      new_post = pairings_to_tweet(pairings)
+      new_post = "@{0}\n".format(tweet._json["user"]["screen_name"]) + new_post
       print(new_post)
 
-      tweeper.update_status(new_post)
+      tweeper.update_status(new_post, in_reply_to_status_id=tweet._json["id"])
+
     except Exception as e:
       print(e)
 
-  time.sleep(60*60)   # Wait 60 minutes between spurts (ratelimit)
+  time.sleep(60*60)   # Wait 1 hour (ratelimit)
