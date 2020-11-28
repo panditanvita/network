@@ -8,7 +8,7 @@ import re
 
 YAML_KEY="search_tweets_v2"
 DESCRIBINGWORDS = "https://describingwords.io/api/descriptors?term="
-TEST_QUERY = "love in the time of cholera -is:retweet -has:media lang:en"
+TEST_QUERY = "ursula le guin -is:retweet -has:media lang:en"
 
 """ Get a JSON object listing the descriptors for a term
 
@@ -30,7 +30,7 @@ def recombine_and_mirror(tweet_keywords: Sequence) -> str:
     if (len(pairings) >= 5):
        break
     # Otherwise every tweet sees this
-    if re.match("l|Love|the|t|Time|c|Cholera", keyword):
+    if re.match("u|Ursula|g|Guin", keyword):
       continue
     time.sleep(.500)  # Otherwise we'll get throttled by the API
     try:
@@ -68,7 +68,9 @@ while True:
   tweets = tweeper.search(TEST_QUERY, lang="en", result_type="recent", count=2, include_entities=False)
   for tweet in tweets:
     try:
-      keywords = re.findall("[a-zA-Z]{3,}", tweet._json["text"])
+      # Don't want to comment on people's usernames, too close to a personal attack
+      stripped_of_usernames = re.sub("@\w+", "", tweet._json["text"])
+      keywords = re.findall("[a-zA-Z]{3,}", stripped_of_usernames)
       keywords = set(keywords) # uniques
       new_post = recombine_and_mirror(list(keywords))
 
