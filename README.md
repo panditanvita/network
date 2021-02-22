@@ -7,3 +7,18 @@ The bot retweets and @'s the original tweeter. Please comment if you would prefe
 It uses the [DescribingWords](https://describingwords.io) API for cross-referencing and the Tweepy API for contacting Twitter.
 
 The bot was created as part of the MIT CMS.614 Network Cultures class assignments.
+
+Usage:
+update the TEST_QUERY field in bot.py to match your preferred media content.
+update recombine_and_mirror re.match so it doesn't match against very common keywords - it's
+nicer to avoid repetitive tweets.
+
+run python3 bot.py
+
+
+Further ideas:
+- automatically switch search queriesi every day. Searching for #NetworkMirrorBot as originally planned is likely to not lead to anything. But we don't want to stay frozen on a single author all the time. 
+- delete all tweets older than 2 days with no likes or comments,
+
+
+

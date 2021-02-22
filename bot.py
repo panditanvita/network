@@ -8,7 +8,8 @@ import re
 
 YAML_KEY="search_tweets_v2"
 DESCRIBINGWORDS = "https://describingwords.io/api/descriptors?term="
-TEST_QUERY = "ursula le guin -is:retweet -has:media lang:en"
+# Also update recombine_and_mirror below
+TEST_QUERY = "anais nin -is:retweet -has:media lang:en"
 
 """ Get a JSON object listing the descriptors for a term
 
@@ -30,7 +31,7 @@ def recombine_and_mirror(tweet_keywords: Sequence) -> str:
     if (len(pairings) >= 5):
        break
     # Otherwise every tweet sees this
-    if re.match("u|Ursula|g|Guin", keyword):
+    if re.match("a|Anais|n|Nin", keyword):
       continue
     time.sleep(.500)  # Otherwise we'll get throttled by the API
     try:
